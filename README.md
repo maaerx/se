@@ -1,2 +1,3 @@
 # SE
-SE - Simple Editor written in C
+SE - Simple Text Editor written in C
+better readme soon
