@@ -1,6 +1,12 @@
-CXX = gcc
-CSRC = main.c console.c
+CC = gcc
 CFLAGS = -Iinclude
+SRCS = main.c console.c
+
+ifeq ($(OS),Windows_NT)
+    TARGET = se.exe
+else
+    TARGET = se
+endif
 
 all:
-	$(CXX) $(CSRC) $(CFLAGS) -o se.exe
+	$(CC) $(SRCS) $(CFLAGS) -o $(TARGET)
