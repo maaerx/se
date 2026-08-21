@@ -519,11 +519,11 @@ void renderScreen(Screen* screen, Editor* editor, Cursor* cursor) {
     size_t screen_idx_x; 
     
 
-    while (line_idx_y < editor->line_length && screen_idx_y < screen->height - 1) {  // editor printing
+    while (line_idx_y < editor->line_length && screen_idx_y < screen->height) {  // editor printing
         line_idx_x = cursor->offset_x;
         screen_idx_x = 0;
 
-        while (line_idx_x < editor->lines[line_idx_y]->text_length && screen_idx_x < screen->width - 1) {
+        while (line_idx_x < editor->lines[line_idx_y]->text_length && screen_idx_x < screen->width) {
             screen->data[screen_idx_y][screen_idx_x] = editor->lines[line_idx_y]->data[line_idx_x];
 
             line_idx_x++;
