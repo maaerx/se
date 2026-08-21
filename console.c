@@ -56,6 +56,12 @@ static size_t HEIGHT = 0;
         Sleep(ms);
     }
 
+    void initTerminalPlatform(void) {
+        enableVtTerminal();
+    }
+
+    void cleanUpTerminalPlatform(void) {}
+
 #else
     /* Linux / POSIX */
     #include <termios.h>
@@ -63,6 +69,8 @@ static size_t HEIGHT = 0;
     #include <unistd.h>
     #include <sys/ioctl.h>
     #include <sys/select.h>
+
+    static struct termios orig_termios;
 
     void enableVtTerminal(void) {}
 
@@ -82,15 +90,13 @@ static size_t HEIGHT = 0;
 
     static void enableRawMode(struct termios *orig) {
         tcgetattr(STDIN_FILENO, orig);
-
         struct termios raw = *orig;
-
         raw.c_lflag &= ~(ECHO | ICANON);
-        tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+        tcsetattr(STDIN_FILENO, TCSANOW, &raw);   
     }
 
     static void disableRawMode(struct termios *orig) {
-        tcsetattr(STDIN_FILENO, TCSAFLUSH, orig);
+        tcsetattr(STDIN_FILENO, TCSANOW, orig);  
     }
 
     char getch(void) {
@@ -134,10 +140,32 @@ static size_t HEIGHT = 0;
         usleep(ms * 1000);
     }
 
+    void initTerminalPlatform(void) {
+        tcgetattr(STDIN_FILENO, &orig_termios);
+        struct termios raw = orig_termios;
+        
+        raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+    
+        raw.c_oflag &= ~(OPOST);
+
+        raw.c_cflag |= (CS8);
+
+        raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+
+        raw.c_cc[VMIN] = 0;
+        raw.c_cc[VTIME] = 0;
+        
+        tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+    }
+
+    void cleanUpTerminalPlatform(void) {
+        tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+    }
+
 #endif
 
 void initTerminal(void) {
-    enableVtTerminal();
+    initTerminalPlatform();
     
     //  alt screen (\x1b[?1049h), hide cursor (\x1b[?25l), disable line wrap (\x1b[?7l)
     fputs("\x1b[?1049h\x1b[?25l\x1b[?7l", stdout); 
@@ -146,32 +174,32 @@ void initTerminal(void) {
     WIDTH = (size_t)getTerminalWidth();
     HEIGHT = (size_t)getTerminalHeight();
 
-    console_buffer_size = (WIDTH + 1) * HEIGHT + 16;    
+    console_buffer_size = (WIDTH + 2) * HEIGHT + 16;    
     console_buffer = (char*)malloc(console_buffer_size);
 }
 
+
 int fillConsoleBuffer(char** buffer, size_t b_rows, size_t b_cols) {
-    size_t needed_size = (b_cols + 1) * b_rows + 16;
+    size_t needed_size = (b_cols + 2) * b_rows + 16;   // was b_cols + 1
     if (needed_size > console_buffer_size) {
         console_buffer_size = needed_size;
         console_buffer = (char*)realloc(console_buffer, console_buffer_size);
     }
 
     int offset = 0;
-    
-    
-    offset += sprintf(console_buffer + offset, "\x1b[H");   // goto(0, 0)
+    offset += sprintf(console_buffer + offset, "\x1b[H");
 
     for (size_t i = 0; i < b_rows; i++) {
         for (size_t j = 0; j < b_cols; j++) {
             console_buffer[offset++] = buffer[i][j];
         }
-        
-        if (i < b_rows - 1) {       // dont print '\n' on the last row to not trigger terminal autoscroll
+
+        if (i < b_rows - 1) {
+            console_buffer[offset++] = '\r';   
             console_buffer[offset++] = '\n';
         }
     }
-    
+
     return offset;
 }
 
@@ -185,6 +213,8 @@ void cleanUpTerminal(void) {
     // Show cursor (\x1b[?25h) and restore main screen buffer (\x1b[?1049l)
     fputs("\x1b[?25h\x1b[?1049l", stdout);
     fflush(stdout);
+
+    cleanUpTerminalPlatform();
 
     if (console_buffer != NULL) {
         free(console_buffer);
