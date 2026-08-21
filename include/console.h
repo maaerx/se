@@ -21,6 +21,8 @@ static size_t HEIGHT;
 
     long long getTimeMs(void);
 
+    void consoleSleep(int ms);
+
 #else
     /* Linux */
 
@@ -36,6 +38,8 @@ static size_t HEIGHT;
     char getch(void);
 
     int kbhit(void);
+
+    void consoleSleep(int ms);
     
 #endif
 
