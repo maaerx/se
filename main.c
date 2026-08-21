@@ -11,10 +11,10 @@
 
 #define    ASCII_NEWLINE    10   
 
-#define    K_UP_ARROW       72
-#define    K_DOWN_ARROW     80
-#define    K_LEFT_ARROW     75
-#define    K_RIGHT_ARROW    77
+#define    K_UP_ARROW     1001
+#define    K_DOWN_ARROW   1002
+#define    K_LEFT_ARROW   1003
+#define    K_RIGHT_ARROW  1004
 #define    K_ENTER          13
 #define    K_BACKSPACE       8
 #define    K_DEL            83        
@@ -660,11 +660,11 @@ int readKey() {
 
         switch (c)
         {
-            case K_UP_ARROW: return K_UP_ARROW;
-            case K_DOWN_ARROW: return K_DOWN_ARROW;
-            case K_LEFT_ARROW: return K_LEFT_ARROW;
-            case K_RIGHT_ARROW: return K_RIGHT_ARROW;
-            case K_DEL: return K_DEL;
+            case 72: return K_UP_ARROW;
+            case 80: return K_DOWN_ARROW;
+            case 75: return K_LEFT_ARROW;
+            case 77: return K_RIGHT_ARROW;
+            case 83: return K_DEL;
         }
         return c;
     }
