@@ -52,6 +52,10 @@ static size_t HEIGHT = 0;
         return uli.QuadPart / 10000;
     }
 
+    void consoleSleep(int ms) {
+        Sleep(ms);
+    }
+
 #else
     /* Linux / POSIX */
     #include <termios.h>
@@ -92,13 +96,13 @@ static size_t HEIGHT = 0;
     char getch(void) {
         char c = 0;
         struct termios orig;
-        disableRawMode(&orig);
+        enableRawMode(&orig);
         
         if (read(STDIN_FILENO, &c, 1) < 0) {
             c = 0;
         }
         
-        disable_raw_mode(&orig);
+        disableRawMode(&orig);
 
         return c;
     }
@@ -114,7 +118,7 @@ static size_t HEIGHT = 0;
         struct timeval timeout = {0, 0}; 
         int result = select(STDIN_FILENO + 1, &readfds, NULL, NULL, &timeout);
 
-        disable_raw_mode(&orig);
+        disableRawMode(&orig);
 
         return result > 0;
     }
@@ -124,6 +128,10 @@ static size_t HEIGHT = 0;
         clock_gettime(CLOCK_REALTIME, &ts);
 
         return (long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+    }
+
+    void consoleSleep(int ms) {
+        usleep(ms * 1000);
     }
 
 #endif
