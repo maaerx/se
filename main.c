@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef _WIN32
+#include <string.h>
+#include <unistd.h>
+#endif
+
 #include "console.h"
 
 #define    ASCII_NEWLINE    10   
@@ -590,8 +595,36 @@ int readKey() {
         return c;
     }
 #else
-    return c;
+    // linux anis escape sequences
+    if (c == 27) { // escape character
+        char seq[3];
+
+        if (read(STDIN_FILENO, &seq[0], 1) <= 0) return 27;
+        if (read(STDIN_FILENO, &seq[1], 1) <= 0) return 27;
+
+        if (seq[0] == '[') {
+            switch (seq[1]) {
+                case 'A': return K_UP_ARROW;
+                case 'B': return K_DOWN_ARROW;
+                case 'C': return K_RIGHT_ARROW;
+                case 'D': return K_LEFT_ARROW;
+                case '3': 
+                    if (read(STDIN_FILENO, &seq[2], 1) > 0 && seq[2] == '~') {
+                        return K_DEL;
+                    }
+                    break;
+            }
+        }
+        return 0; 
+    }
+    
+    if (c == 127) { 
+        return K_BACKSPACE;
+    }
+
 #endif
+
+    return c;
 
 }
 
