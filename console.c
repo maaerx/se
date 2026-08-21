@@ -180,7 +180,7 @@ void initTerminal(void) {
 
 
 int fillConsoleBuffer(char** buffer, size_t b_rows, size_t b_cols) {
-    size_t needed_size = (b_cols + 2) * b_rows + 16;   // was b_cols + 1
+    size_t needed_size = (b_cols + 2) * b_rows + 16;  
     if (needed_size > console_buffer_size) {
         console_buffer_size = needed_size;
         console_buffer = (char*)realloc(console_buffer, console_buffer_size);

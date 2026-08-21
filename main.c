@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #ifndef _WIN32
 #include <string.h>
@@ -60,6 +61,12 @@ typedef struct {
     size_t height;          // terminal height
     size_t width;           // terminal width
 } Screen;
+
+// Status Bar
+typedef struct {
+    char* data;
+    size_t length;
+} StatusBar;
 
 /* Struct creation */
 
@@ -249,6 +256,30 @@ void freeScreen(Screen* screen) {
     }
 }
 
+StatusBar* createStatusBar(size_t width) { // creates status bar
+    StatusBar* statusbar = malloc(sizeof(StatusBar));
+
+    if(statusbar == NULL) {
+        return NULL;
+    }
+
+    statusbar->data = malloc(width * sizeof(char));
+
+    if(statusbar->data == NULL) {
+        free(statusbar);
+        return NULL;
+    }
+
+    statusbar->length = width;
+}
+
+void freeStatusBar(StatusBar* statusbar) { // frees status bar
+    if(statusbar != NULL) {
+        free(statusbar->data);
+        free(statusbar);
+    }
+}
+
 /* Cursor Functions */
 
 void moveCursorDown(Editor* editor, Cursor* cursor, size_t screen_height, size_t screen_width) { // moves cursor down
@@ -359,6 +390,38 @@ void moveCursorLeft(Editor* editor, Cursor* cursor, size_t screen_width) { // mo
         cursor->offset_x = cursor->column - (screen_width - 2);
     }
 }
+
+/* Status Bar functions */
+
+void updateStatusBar(StatusBar* statusbar, char* filename, size_t line_cnt, size_t current_line) {
+
+    memset(statusbar->data, '-', statusbar->length);
+
+    for (size_t i = 0; i < 3; i++)
+    {
+        statusbar->data[i] = '<';
+        statusbar->data[statusbar->length - i - 1] = '>';
+
+    }
+
+    size_t filename_start = 5;
+    size_t filename_length = strlen(filename);
+
+    for (size_t i = 0; i < filename_length; i++)
+    {
+        statusbar->data[i + filename_start] = filename[i];
+    }
+
+    char line_buffer[64];
+    int formatted_len = snprintf(line_buffer, sizeof(line_buffer), "%zu/%zu", current_line, line_cnt);
+
+    size_t line_start = statusbar->length - 5 - (size_t)formatted_len;
+
+    memcpy(statusbar->data + line_start, line_buffer, (size_t)formatted_len);
+   
+
+}
+
 
 /* Character inserting */
 
@@ -502,9 +565,10 @@ void deleteCharLineBegin(Editor* editor, Cursor* cursor) {
     
     resizeEditor(editor, -1);
 }
+
 /* Render functions */
 
-void renderScreen(Screen* screen, Editor* editor, Cursor* cursor) {
+void renderScreen(Screen* screen, Editor* editor, Cursor* cursor, StatusBar* statusbar) {
     // clear screen
     for (size_t i = 0; i < screen->height; i++)
     {
@@ -519,7 +583,7 @@ void renderScreen(Screen* screen, Editor* editor, Cursor* cursor) {
     size_t screen_idx_x; 
     
 
-    while (line_idx_y < editor->line_length && screen_idx_y < screen->height) {  // editor printing
+    while (line_idx_y < editor->line_length && screen_idx_y < screen->height - 1) {  // editor printing
         line_idx_x = cursor->offset_x;
         screen_idx_x = 0;
 
@@ -533,6 +597,16 @@ void renderScreen(Screen* screen, Editor* editor, Cursor* cursor) {
         screen_idx_y++;
         line_idx_y++;
     }
+
+    size_t status_bar_index = 0;
+
+
+    while(status_bar_index < screen->width && status_bar_index < statusbar->length) {
+        screen->data[screen->height - 1][status_bar_index] = statusbar->data[status_bar_index];
+        
+        status_bar_index++;
+    }
+    
     
     if (cursor->visible && cursor->line >= cursor->offset_y) {      // cursor printing
         int screen_y = cursor->line - cursor->offset_y;
@@ -632,15 +706,20 @@ void editorMain(char* filename) {
     FileBuffer* filebuffer = loadFile(filename);
     Editor* editor = createEditor(filebuffer);
     Screen* screen = createScreen(getTerminalHeight(), getTerminalWidth());
+    StatusBar* statusbar = createStatusBar(getTerminalWidth());   
+
+    updateStatusBar(statusbar, filename, editor->line_length, 0);
+
 
     Cursor cursor = { '_', 1, 0, 0, 0, 0};
+
 
     int is_running = 1;
 
     long long timeUpdate = getTimeMs();
     long long timeBlink = getTimeMs();
 
-    renderScreen(screen, editor, &cursor);
+    renderScreen(screen, editor, &cursor, statusbar);
 
     while(is_running) {
         
@@ -686,9 +765,10 @@ void editorMain(char* filename) {
                         cursor.offset_x++;
                     }
                 }
-            
-                renderScreen(screen, editor, &cursor);
 
+                updateStatusBar(statusbar, filename, editor->line_length, cursor.line);
+                renderScreen(screen, editor, &cursor, statusbar);
+                
             }
 
             timeUpdate = getTimeMs();
@@ -703,7 +783,7 @@ void editorMain(char* filename) {
                 cursor.visible = 1;
             }
 
-            renderScreen(screen, editor, &cursor);
+            renderScreen(screen, editor, &cursor, statusbar);
 
             timeBlink = getTimeMs();
         }
