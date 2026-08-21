@@ -571,6 +571,30 @@ void saveFile(Editor* editor, char* filename) {
 
 /* Editor Main Functions */
 
+int readKey() {
+    int c = getch();
+    if(c == 0) return 0;
+
+#ifdef _WIN32
+    if(c == 224 || c == 0) {
+        c = getch();
+
+        switch (c)
+        {
+            case K_UP_ARROW: return K_UP_ARROW;
+            case K_DOWN_ARROW: return K_DOWN_ARROW;
+            case K_LEFT_ARROW: return K_LEFT_ARROW;
+            case K_RIGHT_ARROW: return K_RIGHT_ARROW;
+            case K_DEL: return K_DEL;
+        }
+        return c;
+    }
+#else
+    return c;
+#endif
+
+}
+
 void editorMain(char* filename) {
     FileBuffer* filebuffer = loadFile(filename);
     Editor* editor = createEditor(filebuffer);
@@ -593,48 +617,41 @@ void editorMain(char* filename) {
                 cursor.visible = 1;
                 timeBlink = getTimeMs();
 
-                int c = getch();
+                int c = readKey();
 
-                if(c == 0 || c == 224) {
-                    c = getch();
-
-                    if(c == K_DOWN_ARROW) {
-                        moveCursorDown(editor, &cursor, screen->height, screen->width);
-                    } else if(c == K_UP_ARROW) {
-                        moveCursorUp(editor, &cursor);
-                    } else if(c == K_LEFT_ARROW) {
-                        moveCursorLeft(editor, &cursor, screen->width);
-                    } else if( c== K_RIGHT_ARROW) {
-                        moveCursorRight(editor, &cursor, screen->height, screen->width);
-                    }else if(c == K_DEL) {
-                        deleteChar(editor->lines[cursor.line], cursor.column);
-                    } 
-                }    
-                else {
-                    if(c == K_BACKSPACE) {
-                        if(cursor.column != 0) {
-                            moveCursorLeft(editor, &cursor, screen->width);
-                            deleteChar(editor->lines[cursor.line], cursor.column);
-                        } else {
-                            deleteCharLineBegin(editor, &cursor);
-                        }
-                    } else if(c == K_ENTER) {
-                        insertEnter(editor, cursor.line, cursor.column);
-                        moveCursorRight(editor, &cursor, screen->height, screen->width);
-                    } else if(c == K_TAB) {
-
-                    } else if(c == K_CTRL_X) {
-                        is_running = 0;
-                    } else if(c == K_CTRL_S) {
-                        saveFile(editor, filename);
+                switch (c)
+                {
+                case K_DOWN_ARROW: moveCursorDown(editor, &cursor, screen->height, screen->width); break;
+                case K_UP_ARROW: moveCursorUp(editor, &cursor); break;
+                case K_LEFT_ARROW: moveCursorLeft(editor, &cursor, screen->width); break;
+                case K_RIGHT_ARROW: moveCursorRight(editor, &cursor, screen->height, screen->width); break;
+                
+                case K_BACKSPACE:
+                    if(cursor.column == 0){
+                        deleteCharLineBegin(editor, &cursor);
                     } else {
-                        insertChar(editor->lines[cursor.line], c, cursor.column);
-                        cursor.column++;
-                        if (cursor.column - cursor.offset_x >= screen->width - 1) {
-                            cursor.offset_x++;
-                        }
+                        moveCursorLeft(editor, &cursor, screen->width);
+                        deleteChar(editor->lines[cursor.line], cursor.column);
                     }
-                    
+                    break;
+
+                case K_ENTER:
+                    insertEnter(editor, cursor.line, cursor.column);
+                    moveCursorRight(editor, &cursor, screen->height, screen->width);
+                    break;
+
+                case K_TAB: break;
+
+                case K_CTRL_X: is_running = 0; break;
+                case K_CTRL_S: saveFile(editor, filename); break;
+
+                default:
+                    insertChar(editor->lines[cursor.line], c, cursor.column);
+
+                    cursor.column++;
+                    if (cursor.column - cursor.offset_x >= screen->width - 1) {
+                        cursor.offset_x++;
+                    }
                 }
             
                 renderScreen(screen, editor, &cursor);
@@ -658,7 +675,7 @@ void editorMain(char* filename) {
             timeBlink = getTimeMs();
         }
         
-        Sleep(10);
+        consoleSleep(10);
     }
 
 
