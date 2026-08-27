@@ -4,7 +4,7 @@ SE is a lightweight Text Editor
 ## Features
 - **Cross platform compatibility** 
 - **Status Bar**
-- No Ctrl+C / Ctrl+V support (anti vibecoding)
+- No Ctrl+C / Ctrl+V support (anti vibecoding) 
 ## Installation
 ##### with Make
 	make
