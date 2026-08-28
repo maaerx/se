@@ -179,7 +179,7 @@ FileBuffer* loadFile(char* filename) { // creates file buffer
         return NULL;
     }
 
-    size_t size = 0;                    // Get the length of the file
+    size_t size = 0;                // Get the length of the file
 
     while(fgetc(file) != EOF) {
         size++;
