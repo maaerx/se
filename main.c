@@ -271,6 +271,8 @@ StatusBar* createStatusBar(size_t width) { // creates status bar
     }
 
     statusbar->length = width;
+
+    return statusbar;
 }
 
 void freeStatusBar(StatusBar* statusbar) { // frees status bar
